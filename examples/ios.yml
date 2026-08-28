@@ -1,0 +1,51 @@
+name: Maestro E2E (iOS)
+
+on:
+  pull_request: {}
+
+jobs:
+  build_ios:
+    type: build
+    params:
+      platform: ios
+      profile: preview
+
+  e2e_ios:
+    needs: [build_ios]
+    runs_on: linux-medium
+    # See examples/android.yml for the notes on secrets and the reserved
+    # EAS_BUILD_* namespace.
+    env:
+      TB_EAS_BUILD_ID: ${{ needs.build_ios.outputs.build_id }}
+      TB_EAS_PLATFORM: ios
+      TB_EAS_PROFILE: preview
+      TB_EAS_APP_VERSION: ${{ needs.build_ios.outputs.app_version }}
+      TB_GH_SHA: ${{ github.sha }}
+      TB_GH_BRANCH: ${{ github.ref_name }}
+      TB_GH_PR_NUMBER: ${{ github.event.pull_request.number }}
+      TB_GH_REPO_OWNER: ${{ github.repository_owner }}
+      TB_GH_REPO_NAME: ${{ github.repository }}
+    outputs:
+      console_url: ${{ steps.testingbot.outputs.console_url }}
+      app_id: ${{ steps.testingbot.outputs.app_id }}
+      run_status: ${{ steps.testingbot.outputs.run_status }}
+      summary: ${{ steps.testingbot.outputs.summary }}
+      failed_flows_count: ${{ steps.testingbot.outputs.failed_flows_count }}
+    steps:
+      - uses: eas/checkout
+      - uses: eas/download_build
+        id: download
+        with:
+          build_id: ${{ needs.build_ios.outputs.build_id }}
+      - name: Run Maestro flows on TestingBot
+        id: testingbot
+        # An .ipa runs on a real device (--real-device is implied for .ipa
+        # files). Use a simulator build (.app/.zip) to run on simulators.
+        run: |
+          npx --yes @testingbot/eas-workflow@v1 \
+            --app-file ${{ steps.download.outputs.artifact_path }} \
+            --flows ./.maestro \
+            --device "iPhone 16" \
+            --deviceVersion "18.0" \
+            --real-device \
+            --shard-split 1

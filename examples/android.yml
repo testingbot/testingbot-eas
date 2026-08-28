@@ -1,0 +1,69 @@
+name: Maestro E2E (Android)
+
+on:
+  pull_request: {}
+
+jobs:
+  build_android:
+    type: build
+    params:
+      platform: android
+      profile: preview
+
+  e2e_android:
+    needs: [build_android]
+    runs_on: linux-medium
+    # TB_KEY and TB_SECRET come from EAS project secrets and are injected
+    # automatically. Do not reference them with ${{ secrets.X }} — that syntax
+    # is not supported in EAS Workflows.
+    #
+    # Never name a variable EAS_BUILD_*: that namespace belongs to the EAS Build
+    # worker, and overwriting EAS_BUILD_ID kills the job silently after
+    # PREPARE_PROJECT.
+    env:
+      TB_EAS_BUILD_ID: ${{ needs.build_android.outputs.build_id }}
+      TB_EAS_PLATFORM: android
+      TB_EAS_PROFILE: preview
+      TB_EAS_APP_VERSION: ${{ needs.build_android.outputs.app_version }}
+      TB_GH_SHA: ${{ github.sha }}
+      TB_GH_BRANCH: ${{ github.ref_name }}
+      TB_GH_PR_NUMBER: ${{ github.event.pull_request.number }}
+      TB_GH_REPO_OWNER: ${{ github.repository_owner }}
+      TB_GH_REPO_NAME: ${{ github.repository }}
+    outputs:
+      console_url: ${{ steps.testingbot.outputs.console_url }}
+      app_id: ${{ steps.testingbot.outputs.app_id }}
+      run_status: ${{ steps.testingbot.outputs.run_status }}
+      summary: ${{ steps.testingbot.outputs.summary }}
+      total_flows_count: ${{ steps.testingbot.outputs.total_flows_count }}
+      successful_flows_count: ${{ steps.testingbot.outputs.successful_flows_count }}
+      failed_flows_count: ${{ steps.testingbot.outputs.failed_flows_count }}
+    steps:
+      - uses: eas/checkout
+      - uses: eas/download_build
+        id: download
+        with:
+          build_id: ${{ needs.build_android.outputs.build_id }}
+      - name: Run Maestro flows on TestingBot
+        id: testingbot
+        run: |
+          npx --yes @testingbot/eas-workflow@v1 \
+            --app-file ${{ steps.download.outputs.artifact_path }} \
+            --flows ./.maestro \
+            --device "Pixel 8" \
+            --deviceVersion "14" \
+            --shard-split 2 \
+            --report junit \
+            --report-output-dir ./reports
+
+  # EAS has no test-report panel, so results are surfaced through the step
+  # outputs. `after` (rather than `needs`) means this still runs when the e2e
+  # job fails, which is exactly when you want the comment.
+  report:
+    after: [e2e_android]
+    type: github-comment
+    params:
+      payload: |
+        ### Maestro on TestingBot — ${{ after.e2e_android.outputs.run_status }}
+        ${{ after.e2e_android.outputs.summary }}
+        [View results](${{ after.e2e_android.outputs.console_url }})

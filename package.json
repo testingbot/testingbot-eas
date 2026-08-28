@@ -1,0 +1,45 @@
+{
+  "name": "@testingbot/eas-workflow",
+  "description": "Run Maestro tests on TestingBot from EAS Workflows",
+  "author": "TestingBot",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "bin": {
+    "testingbot-eas-workflow": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/testingbot/testingbot-eas.git"
+  },
+  "homepage": "https://testingbot.com/support/maestro",
+  "keywords": [
+    "testingbot",
+    "maestro",
+    "eas",
+    "expo",
+    "eas-workflows",
+    "mobile-testing",
+    "e2e"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --minify",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vercel/ncc": "^0.38.3",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@9.12.3"
+}
