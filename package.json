@@ -2,7 +2,7 @@
   "name": "@testingbot/eas-workflow",
   "description": "Run Maestro tests on TestingBot from EAS Workflows",
   "author": "TestingBot",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "dist/index.js",
   "bin": {
     "testingbot-eas-workflow": "dist/index.js"
@@ -39,7 +39,7 @@
     "@vercel/ncc": "^0.38.3",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^5.0.0"
   },
   "packageManager": "pnpm@9.12.3"
 }
