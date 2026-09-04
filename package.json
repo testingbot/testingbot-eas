@@ -39,6 +39,7 @@
     "@vercel/ncc": "^0.38.3",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
+    "vite": "^8.2.2",
     "vitest": "^5.0.0"
   },
   "packageManager": "pnpm@9.12.3"
