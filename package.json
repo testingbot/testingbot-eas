@@ -15,7 +15,7 @@
     "type": "git",
     "url": "git+https://github.com/testingbot/testingbot-eas.git"
   },
-  "homepage": "https://testingbot.com/support/maestro",
+  "homepage": "https://testingbot.com/support/app-automate/maestro/ci-cd/expo-eas",
   "keywords": [
     "testingbot",
     "maestro",

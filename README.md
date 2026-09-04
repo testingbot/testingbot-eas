@@ -1,6 +1,6 @@
 # TestingBot for EAS Workflows
 
-Run [Maestro](https://maestro.mobile.dev/) flows on the [TestingBot](https://testingbot.com) device grid from inside [EAS Workflows](https://docs.expo.dev/eas/workflows/get-started/).
+Run [Maestro](https://maestro.mobile.dev/) flows on the [TestingBot](https://testingbot.com) device grid from inside [EAS Workflows](https://docs.expo.dev/eas/workflows/get-started/). Documentation: [Maestro tests for Expo / EAS Build](https://testingbot.com/support/app-automate/maestro/ci-cd/expo-eas).
 
 A drop-in alternative to Expo's built-in `maestro-cloud` job type: run your flows on TestingBot's real devices and emulators instead of Maestro Cloud, with no Maestro Cloud account required.
 
