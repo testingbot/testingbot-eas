@@ -22,6 +22,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # Trusted publishing: npm mints a short-lived token from the GitHub OIDC
+      # identity of this workflow (id-token: write above). No NPM_TOKEN secret.
+      - run: npm install -g npm@latest
       - run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
