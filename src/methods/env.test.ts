@@ -23,7 +23,9 @@ describe('getEnv', () => {
     const env = getEnv({
       ...credentials,
       TB_GH_SHA: 'abc123',
+      TB_GH_BRANCH: 'feat/x',
       TB_GH_PR_NUMBER: '42',
+      TB_GH_PR_URL: 'https://github.com/testingbot/testingbot-eas/pull/42',
       TB_GH_REPO_OWNER: 'testingbot',
       TB_GH_REPO_NAME: 'testingbot-eas',
     });
@@ -31,12 +33,18 @@ describe('getEnv', () => {
     expect(env.metadataArgs).toEqual([
       '--commit-sha',
       'abc123',
+      '--branch',
+      'feat/x',
       '--pull-request-id',
       '42',
+      '--pr-url',
+      'https://github.com/testingbot/testingbot-eas/pull/42',
       '--repo-owner',
       'testingbot',
       '--repo-name',
       'testingbot-eas',
+      '--name',
+      'EAS feat/x',
     ]);
   });
 

@@ -14,7 +14,9 @@ export interface TestingBotEnv {
 // silently after PREPARE_PROJECT.
 const flagMappings: Array<[envVar: string, flag: string]> = [
   ['TB_GH_SHA', '--commit-sha'],
+  ['TB_GH_BRANCH', '--branch'],
   ['TB_GH_PR_NUMBER', '--pull-request-id'],
+  ['TB_GH_PR_URL', '--pr-url'],
   ['TB_GH_REPO_OWNER', '--repo-owner'],
   ['TB_GH_REPO_NAME', '--repo-name'],
 ];

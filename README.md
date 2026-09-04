@@ -54,10 +54,12 @@ Complete Android and iOS examples live in [`examples/`](./examples).
 
 ## Wrapper options
 
-| Flag                | Required | Description                                                                                                                     |
-| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `--app-file <path>` | yes      | The app under test: `.apk`, `.ipa`, or an `.app`/`.zip` simulator build. Usually `${{ steps.download.outputs.artifact_path }}`. |
-| `--flows <path>`    | yes      | Maestro flows: a directory, a single `.yaml`/`.yml`, a `.zip`, or a glob. Repeat the flag for multiple paths.                   |
+| Flag                | Required | Description                                                                                                                                       |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--app-file <path>` | one of   | The app under test: `.apk`, `.ipa`, an `.app`/`.zip` simulator build, or an EAS `.tar.gz`. Usually `${{ steps.download.outputs.artifact_path }}`. |
+| `--app-url <url>`   | one of   | Download the app instead: an EAS Build artifact URL or any http(s) link to an `.apk`, `.ipa`, `.zip` or `.tar.gz`. Forwarded to the CLI.          |
+| `--app-binary-id`   | one of   | Reuse an app uploaded earlier (the `app_id` output of a previous step). Forwarded to the CLI.                                                     |
+| `--flows <path>`    | yes      | Maestro flows: a directory, a single `.yaml`/`.yml`, a `.zip`, or a glob. Repeat the flag for multiple paths.                                     |
 
 Every other flag is passed straight through to `testingbot maestro`, so the full CLI surface is available — `--device`, `--deviceVersion`, `--real-device`, `--shard-split`, `--retry`, `--include-tags`, `--report`, `--download-artifacts`, `--async`, `-e KEY=VALUE`, and so on. See the [TestingBot Maestro docs](https://testingbot.com/support/maestro) for the full list.
 
@@ -74,7 +76,8 @@ Device names accept wildcards (`--device ".*Galaxy.*"`), which lets TestingBot a
 | `TB_GH_SHA`                                                                  | Recorded as the run's commit SHA (`--commit-sha`).                                 |
 | `TB_GH_PR_NUMBER`                                                            | Recorded as the pull request id (`--pull-request-id`).                             |
 | `TB_GH_REPO_OWNER`, `TB_GH_REPO_NAME`                                        | Recorded as the repository owner and name.                                         |
-| `TB_GH_BRANCH`                                                               | Prefixes the generated run name.                                                   |
+| `TB_GH_BRANCH`                                                               | Recorded as the run's branch (`--branch`) and prefixes the generated run name.     |
+| `TB_GH_PR_URL`                                                               | Recorded as the pull request URL (`--pr-url`).                                     |
 | `TB_EAS_BUILD_ID`, `TB_EAS_PLATFORM`, `TB_EAS_PROFILE`, `TB_EAS_APP_VERSION` | Folded into the run name so the build is identifiable on the TestingBot dashboard. |
 | `TB_RUN_NAME`                                                                | Sets the run name explicitly, overriding the generated one.                        |
 | `TB_GROUPS`                                                                  | Comma-separated group tags for the session (`--groups`).                           |
@@ -84,22 +87,24 @@ Device names accept wildcards (`--device ".*Galaxy.*"`), which lets TestingBot a
 
 ## Step outputs
 
-| Output                       | Description                                             |
-| ---------------------------- | ------------------------------------------------------- |
-| `console_url`                | Link to the run on the TestingBot dashboard.            |
-| `app_id`                     | TestingBot project id for the uploaded app.             |
-| `run_urls`                   | Comma-separated links to each individual run.           |
-| `run_status`                 | `PASSED`, `FAILED`, or `ERROR`.                         |
-| `total_flows_count`          | Number of flows that reported a result.                 |
-| `successful_flows_count`     | Number of flows that passed.                            |
-| `failed_flows_count`         | Number of flows that failed.                            |
-| `successful_flow_names_json` | JSON array of passing flow names.                       |
-| `failed_flow_names_json`     | JSON array of failing flow names.                       |
-| `summary`                    | One-line result summary, e.g. `1 of 5 flows failed: …`. |
+| Output                       | Description                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `console_url`                | Link to the run on the TestingBot dashboard.                                |
+| `app_id`                     | TestingBot project id for the uploaded app.                                 |
+| `run_urls`                   | Comma-separated links to each individual run.                               |
+| `run_status`                 | `PASSED`, `FAILED`, `STARTED` (async), or `ERROR`.                          |
+| `outcome`                    | The CLI's own outcome: `passed`, `failed`, `started`, `dry-run` or `error`. |
+| `error`                      | The error message when `run_status` is `ERROR`.                             |
+| `total_flows_count`          | Number of flows that reported a result.                                     |
+| `successful_flows_count`     | Number of flows that passed.                                                |
+| `failed_flows_count`         | Number of flows that failed.                                                |
+| `successful_flow_names_json` | JSON array of passing flow names.                                           |
+| `failed_flow_names_json`     | JSON array of failing flow names.                                           |
+| `summary`                    | One-line result summary, e.g. `1 of 5 flows failed: …`.                     |
 
-The step exits non-zero when any flow fails, so the job fails as you would expect.
+The step exits with the CLI's exit codes: `0` when every flow passed (also for `--async` and `--dry-run`), `2` when one or more flows failed, `1` on a CLI or infrastructure error. So the job fails as you would expect, and a pipeline can tell a red test run from a broken upload.
 
-The flow counts come from one call to the TestingBot API after the run finishes. Retried flows are counted once, with the last attempt winning. They are skipped in `--async` mode, since no results exist yet, and if that call fails the outputs are simply omitted — it never turns a passing job into a failing one.
+The flow counts come from the results document the CLI writes (`--json-file`, CLI 1.2.0 and newer). Retried flows are counted once, with the last attempt winning, and with `--device-matrix` each device's result is listed separately as `flow (device)`. They are skipped in `--async` mode, since no results exist yet. With a CLI pinned below 1.2.0 via `TB_CLI_VERSION` the wrapper falls back to reading the console output and one status call to the API.
 
 ### Reporting results
 
@@ -178,7 +183,9 @@ Outputs keep the same names, so downstream `github-comment` and `slack` jobs nee
 
 ## How it works
 
-The package is a thin wrapper. It validates the environment, resolves the latest `@testingbot/cli`, and runs `npx @testingbot/cli maestro <app> <flows> …` with your credentials and CI metadata attached. The CLI does the real work: uploading the app and flows, starting the run, streaming progress, and polling for results. All CLI output is streamed to stderr so you see live progress in the EAS logs, while stdout carries only the `set-output` lines EAS reads.
+The package is a thin wrapper. It validates the environment, resolves the latest `@testingbot/cli` (1.2.0 or newer), and runs `npx @testingbot/cli maestro <app> <flows> … --json-file` with your credentials and CI metadata attached. The CLI does the real work: uploading the app and flows, starting the run, streaming progress, and polling for results; inside an EAS Build job it also records the EAS build id, profile, platform and commit on the run by itself. All CLI output is streamed to stderr so you see live progress in the EAS logs, while stdout carries only the `set-output` lines EAS reads, filled from the CLI's JSON results document.
+
+With the TestingBot GitHub App installed for the repository, a run that carries `TB_GH_REPO_OWNER`, `TB_GH_REPO_NAME` and a full `TB_GH_SHA` also posts a `TestingBot / tests` status check on the pull request.
 
 ## Development
 

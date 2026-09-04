@@ -1,16 +1,24 @@
 #!/usr/bin/env node
 import { spawn } from 'child_process';
+import { mkdtemp, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { parseArgs } from './methods/args';
 import { getEnv, type TestingBotEnv } from './methods/env';
 import { parseResults, setOutput, stripAnsi } from './methods/output';
+import {
+  buildJsonOutputs,
+  exitCodeFor,
+  readJsonResults,
+} from './methods/results';
 import { buildFlowOutputs, fetchStatus } from './methods/status';
 
 const CLI_PACKAGE = '@testingbot/cli';
 /** Used when the npm registry is unreachable; npx resolves the range itself. */
-const CLI_FALLBACK_RANGE = '^1.1.1';
+const CLI_FALLBACK_RANGE = '^1.2.0';
 const REGISTRY_TIMEOUT_MS = 10_000;
 
-const WRAPPER_VERSION = '1.0.0';
+const WRAPPER_VERSION = '1.1.0';
 
 async function resolveCliVersion(env: TestingBotEnv): Promise<string> {
   if (env.cliVersion) {
@@ -98,19 +106,49 @@ async function main(): Promise<number> {
   const env = getEnv();
   const cliVersion = await resolveCliVersion(env);
 
+  // CLI 1.2.0+ writes a JSON results document; read outputs from it instead of
+  // scraping the console. With --json-file the CLI exits 0 even when flows
+  // fail, so the exit code is derived from the document below.
+  const resultsDir = await mkdtemp(join(tmpdir(), 'testingbot-eas-'));
+  const resultsFile = join(resultsDir, 'results.json');
+
   const cliArgs = [
     '--yes',
     `${CLI_PACKAGE}@${cliVersion}`,
     'maestro',
-    args.appFile,
+    ...(args.appFile ? [args.appFile] : []),
     ...args.flows,
     ...env.metadataArgs,
     ...args.passthrough,
+    '--json-file',
+    '--json-file-name',
+    resultsFile,
   ];
 
   log(`Running ${CLI_PACKAGE}@${cliVersion} maestro`);
   const { exitCode, output } = await runCli(cliArgs, env);
 
+  const json = await readJsonResults(resultsFile);
+  await rm(resultsDir, { recursive: true, force: true }).catch(() => {});
+  if (json) {
+    for (const [name, value] of buildJsonOutputs(json)) {
+      setOutput(name, value);
+    }
+    if (json.outcome === 'failed') {
+      log(`${json.runs.length} run(s) finished with failing flows.`);
+    } else if (json.outcome === 'error') {
+      log(`The CLI reported an error: ${json.error ?? 'unknown'}`);
+    }
+    // A non-zero CLI exit with a document means a CLI/infrastructure error
+    // even if the document itself says otherwise (e.g. an unknown option).
+    return exitCode !== 0 ? exitCode : exitCodeFor(json.outcome);
+  }
+
+  // Fallback for CLIs older than 1.2.0 (TB_CLI_VERSION pin): scrape the
+  // console output and fetch flow results from the API.
+  log(
+    'No JSON results file was written (CLI older than 1.2.0?); reading results from the console output.',
+  );
   const results = parseResults(output);
   if (results.consoleUrl) {
     setOutput('console_url', results.consoleUrl);
@@ -121,7 +159,12 @@ async function main(): Promise<number> {
   if (results.runUrls.length > 0) {
     setOutput('run_urls', results.runUrls.join(','));
   }
-  setOutput('run_status', exitCode === 0 ? 'PASSED' : 'FAILED');
+  // Without a project id nothing ran, so a non-zero exit is an error rather
+  // than a test failure.
+  setOutput(
+    'run_status',
+    exitCode === 0 ? 'PASSED' : results.appId ? 'FAILED' : 'ERROR',
+  );
 
   if (!results.appId) {
     log(

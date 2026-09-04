@@ -1,12 +1,16 @@
 export interface WrapperArgs {
-  appFile: string;
+  /** Local app path. Absent when the app comes from --app-url or --app-binary-id. */
+  appFile?: string;
   flows: string[];
   /** Everything else, forwarded verbatim to `testingbot maestro`. */
   passthrough: string[];
 }
 
 const USAGE =
-  'Usage: npx --yes @testingbot/eas-workflow@v1 --app-file <path> --flows <path> [testingbot maestro options]';
+  'Usage: npx --yes @testingbot/eas-workflow@v1 (--app-file <path> | --app-url <url> | --app-binary-id <id>) --flows <path> [testingbot maestro options]';
+
+/** CLI flags that supply the app without a local file. */
+const ALTERNATIVE_APP_FLAGS = ['--app-url', '--app-binary-id'];
 
 /**
  * Splits our own two flags out of argv; anything unrecognised belongs to the
@@ -37,8 +41,20 @@ export function parseArgs(argv: string[]): WrapperArgs {
     passthrough.push(arg);
   }
 
-  if (!appFile) {
-    throw new Error(`--app-file is required.\n${USAGE}`);
+  const hasAlternativeApp = passthrough.some((arg) =>
+    ALTERNATIVE_APP_FLAGS.some(
+      (flag) => arg === flag || arg.startsWith(`${flag}=`),
+    ),
+  );
+  if (!appFile && !hasAlternativeApp) {
+    throw new Error(
+      `--app-file is required (or pass --app-url / --app-binary-id).\n${USAGE}`,
+    );
+  }
+  if (appFile && hasAlternativeApp) {
+    throw new Error(
+      `Pass only one of --app-file, --app-url and --app-binary-id.\n${USAGE}`,
+    );
   }
   if (flows.length === 0) {
     throw new Error(
