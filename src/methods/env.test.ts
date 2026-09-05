@@ -62,6 +62,32 @@ describe('getEnv', () => {
   });
 });
 
+describe('getEnv repository handling', () => {
+  it('splits an owner/repo TB_GH_REPO_NAME into name and owner', () => {
+    const env = getEnv({ ...credentials, TB_GH_REPO_NAME: 'testingbot/app' });
+    expect(env.metadataArgs).toEqual([
+      '--repo-name',
+      'app',
+      '--repo-owner',
+      'testingbot',
+    ]);
+  });
+
+  it('keeps an explicit TB_GH_REPO_OWNER', () => {
+    const env = getEnv({
+      ...credentials,
+      TB_GH_REPO_OWNER: 'acme',
+      TB_GH_REPO_NAME: 'testingbot/app',
+    });
+    expect(env.metadataArgs).toEqual([
+      '--repo-owner',
+      'acme',
+      '--repo-name',
+      'app',
+    ]);
+  });
+});
+
 describe('buildRunName', () => {
   it('returns undefined when no EAS metadata is present', () => {
     expect(buildRunName({})).toBeUndefined();

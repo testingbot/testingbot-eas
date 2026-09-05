@@ -67,23 +67,25 @@ Device names accept wildcards (`--device ".*Galaxy.*"`), which lets TestingBot a
 
 ## Environment variables
 
+Set `env` on the **job**, not on a step: EAS can silently ignore step-level `env`. Pull request expressions (`github.event.pull_request.number`, `.html_url`) evaluate to `null` on manual and push triggers and EAS then rejects the job, so only set `TB_GH_PR_NUMBER` / `TB_GH_PR_URL` in workflows triggered by `pull_request`.
+
 > [!WARNING]
 > Never name a workflow variable with the `EAS_BUILD_*` prefix. That namespace is reserved by the EAS Build worker, and overwriting `EAS_BUILD_ID` breaks the project-archive refresh — the job then fails silently after the `PREPARE_PROJECT` phase. This wrapper uses the `TB_*` prefix for exactly that reason.
 
-| Variable                                                                     | Purpose                                                                            |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `TB_KEY`, `TB_SECRET`                                                        | **Required.** TestingBot credentials, set as EAS project secrets.                  |
-| `TB_GH_SHA`                                                                  | Recorded as the run's commit SHA (`--commit-sha`).                                 |
-| `TB_GH_PR_NUMBER`                                                            | Recorded as the pull request id (`--pull-request-id`).                             |
-| `TB_GH_REPO_OWNER`, `TB_GH_REPO_NAME`                                        | Recorded as the repository owner and name.                                         |
-| `TB_GH_BRANCH`                                                               | Recorded as the run's branch (`--branch`) and prefixes the generated run name.     |
-| `TB_GH_PR_URL`                                                               | Recorded as the pull request URL (`--pr-url`).                                     |
-| `TB_EAS_BUILD_ID`, `TB_EAS_PLATFORM`, `TB_EAS_PROFILE`, `TB_EAS_APP_VERSION` | Folded into the run name so the build is identifiable on the TestingBot dashboard. |
-| `TB_RUN_NAME`                                                                | Sets the run name explicitly, overriding the generated one.                        |
-| `TB_GROUPS`                                                                  | Comma-separated group tags for the session (`--groups`).                           |
-| `TB_CLI_VERSION`                                                             | Pins `@testingbot/cli` to a specific version instead of resolving the latest.      |
-| `TB_USE_BETA`                                                                | Set to `true` to use the `@testingbot/cli` beta release.                           |
-| `TB_API_URL`                                                                 | Overrides the TestingBot API base URL used to read flow results.                   |
+| Variable                                                                     | Purpose                                                                                                                                                          |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TB_KEY`, `TB_SECRET`                                                        | **Required.** TestingBot credentials, set as EAS project secrets.                                                                                                |
+| `TB_GH_SHA`                                                                  | Recorded as the run's commit SHA (`--commit-sha`).                                                                                                               |
+| `TB_GH_PR_NUMBER`                                                            | Recorded as the pull request id (`--pull-request-id`).                                                                                                           |
+| `TB_GH_REPO_OWNER`, `TB_GH_REPO_NAME`                                        | Recorded as the repository owner and name. `TB_GH_REPO_NAME` accepts `${{ github.repository }}` (`owner/repo`) and splits it, so the owner variable is optional. |
+| `TB_GH_BRANCH`                                                               | Recorded as the run's branch (`--branch`) and prefixes the generated run name.                                                                                   |
+| `TB_GH_PR_URL`                                                               | Recorded as the pull request URL (`--pr-url`).                                                                                                                   |
+| `TB_EAS_BUILD_ID`, `TB_EAS_PLATFORM`, `TB_EAS_PROFILE`, `TB_EAS_APP_VERSION` | Folded into the run name so the build is identifiable on the TestingBot dashboard.                                                                               |
+| `TB_RUN_NAME`                                                                | Sets the run name explicitly, overriding the generated one.                                                                                                      |
+| `TB_GROUPS`                                                                  | Comma-separated group tags for the session (`--groups`).                                                                                                         |
+| `TB_CLI_VERSION`                                                             | Pins `@testingbot/cli` to a specific version instead of resolving the latest.                                                                                    |
+| `TB_USE_BETA`                                                                | Set to `true` to use the `@testingbot/cli` beta release.                                                                                                         |
+| `TB_API_URL`                                                                 | Overrides the TestingBot API base URL used to read flow results.                                                                                                 |
 
 ## Step outputs
 

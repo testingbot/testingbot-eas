@@ -17,6 +17,11 @@ jobs:
     # automatically. Do not reference them with ${{ secrets.X }} — that syntax
     # is not supported in EAS Workflows.
     #
+    # Set env on the job, not on a step (EAS can ignore step env). Only add
+    # TB_GH_PR_NUMBER: ${{ github.event.pull_request.number }} in workflows that
+    # run on pull_request: the expression is null on other triggers and EAS
+    # rejects the job. TB_GH_REPO_NAME accepts github.repository (owner/repo).
+    #
     # Never name a variable EAS_BUILD_*: that namespace belongs to the EAS Build
     # worker, and overwriting EAS_BUILD_ID kills the job silently after
     # PREPARE_PROJECT.
@@ -27,8 +32,6 @@ jobs:
       TB_EAS_APP_VERSION: ${{ needs.build_android.outputs.app_version }}
       TB_GH_SHA: ${{ github.sha }}
       TB_GH_BRANCH: ${{ github.ref_name }}
-      TB_GH_PR_NUMBER: ${{ github.event.pull_request.number }}
-      TB_GH_REPO_OWNER: ${{ github.repository_owner }}
       TB_GH_REPO_NAME: ${{ github.repository }}
     outputs:
       console_url: ${{ steps.testingbot.outputs.console_url }}

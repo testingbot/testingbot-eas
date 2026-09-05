@@ -56,6 +56,18 @@ export function getEnv(env: NodeJS.ProcessEnv = process.env): TestingBotEnv {
     }
   }
 
+  // `${{ github.repository }}` is "owner/repo". Accept that in TB_GH_REPO_NAME
+  // and derive the owner, so a workflow needs one variable, not two.
+  const repoName = env.TB_GH_REPO_NAME;
+  if (repoName?.includes('/')) {
+    const [owner, ...rest] = repoName.split('/');
+    const nameIndex = metadataArgs.indexOf('--repo-name');
+    metadataArgs[nameIndex + 1] = rest.join('/');
+    if (owner && !env.TB_GH_REPO_OWNER) {
+      metadataArgs.push('--repo-owner', owner);
+    }
+  }
+
   const name = buildRunName(env);
   if (name) {
     metadataArgs.push('--name', name);

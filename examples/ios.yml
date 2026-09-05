@@ -22,8 +22,6 @@ jobs:
       TB_EAS_APP_VERSION: ${{ needs.build_ios.outputs.app_version }}
       TB_GH_SHA: ${{ github.sha }}
       TB_GH_BRANCH: ${{ github.ref_name }}
-      TB_GH_PR_NUMBER: ${{ github.event.pull_request.number }}
-      TB_GH_REPO_OWNER: ${{ github.repository_owner }}
       TB_GH_REPO_NAME: ${{ github.repository }}
     outputs:
       console_url: ${{ steps.testingbot.outputs.console_url }}
