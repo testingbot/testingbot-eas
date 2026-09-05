@@ -18,6 +18,7 @@ jobs:
     env:
       TB_EAS_BUILD_ID: ${{ needs.build_ios.outputs.build_id }}
       TB_EAS_PLATFORM: ios
+      TB_CHECK_NAME: iOS
       TB_EAS_PROFILE: preview
       TB_EAS_APP_VERSION: ${{ needs.build_ios.outputs.app_version }}
       TB_GH_SHA: ${{ github.sha }}

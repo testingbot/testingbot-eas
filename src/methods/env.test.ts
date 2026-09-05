@@ -62,6 +62,13 @@ describe('getEnv', () => {
   });
 });
 
+describe('getEnv check name', () => {
+  it('maps TB_CHECK_NAME to --check-name', () => {
+    const env = getEnv({ ...credentials, TB_CHECK_NAME: 'iOS' });
+    expect(env.metadataArgs).toEqual(['--check-name', 'iOS']);
+  });
+});
+
 describe('getEnv repository handling', () => {
   it('splits an owner/repo TB_GH_REPO_NAME into name and owner', () => {
     const env = getEnv({ ...credentials, TB_GH_REPO_NAME: 'testingbot/app' });

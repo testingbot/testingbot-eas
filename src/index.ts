@@ -18,7 +18,7 @@ const CLI_PACKAGE = '@testingbot/cli';
 const CLI_FALLBACK_RANGE = '^1.2.0';
 const REGISTRY_TIMEOUT_MS = 10_000;
 
-const WRAPPER_VERSION = '1.1.2';
+const WRAPPER_VERSION = '1.2.0';
 
 async function resolveCliVersion(env: TestingBotEnv): Promise<string> {
   if (env.cliVersion) {

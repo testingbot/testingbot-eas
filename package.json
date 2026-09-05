@@ -2,7 +2,7 @@
   "name": "@testingbot/eas-workflow",
   "description": "Run Maestro tests on TestingBot from EAS Workflows",
   "author": "TestingBot",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "main": "dist/index.js",
   "bin": {
     "testingbot-eas-workflow": "dist/index.js"

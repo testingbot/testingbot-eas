@@ -19,6 +19,7 @@ const flagMappings: Array<[envVar: string, flag: string]> = [
   ['TB_GH_PR_URL', '--pr-url'],
   ['TB_GH_REPO_OWNER', '--repo-owner'],
   ['TB_GH_REPO_NAME', '--repo-name'],
+  ['TB_CHECK_NAME', '--check-name'],
 ];
 
 /**

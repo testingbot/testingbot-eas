@@ -28,6 +28,7 @@ jobs:
     env:
       TB_EAS_BUILD_ID: ${{ needs.build_android.outputs.build_id }}
       TB_EAS_PLATFORM: android
+      TB_CHECK_NAME: Android
       TB_EAS_PROFILE: preview
       TB_EAS_APP_VERSION: ${{ needs.build_android.outputs.app_version }}
       TB_GH_SHA: ${{ github.sha }}
